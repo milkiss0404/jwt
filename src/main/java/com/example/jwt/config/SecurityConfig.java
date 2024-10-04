@@ -1,16 +1,31 @@
 package com.example.jwt.config;
 
+import com.example.jwt.jwt.JWTUtill;
+import com.example.jwt.jwt.LoginFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+    private final AuthenticationConfiguration authenticationConfiguration;
+    private final JWTUtill jwtUtill;
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration)throws Exception{
+        return configuration.getAuthenticationManager();
+    }
+
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -32,6 +47,11 @@ public class SecurityConfig {
                         .requestMatchers("/admin").hasRole("ADMIN")
                         .anyRequest().authenticated()); // anyRequest = 나머지 요청에는 로그인된
                                                         // authenticated =사용자만 접근가능하게
+        //addFilterAt() 딱 그자리에 넣기
+        //addFilterAfter 이 필터뒤에
+        //addFilterBefore 이 필터 전에
+        http.addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration),jwtUtill), UsernamePasswordAuthenticationFilter.class);
+
 
         //세션 설정
         // TODO: jwt 방식에서는  세션을 stateless 하게 관리해주어야 한다.  이부분이 꼭필요함
